@@ -1,9 +1,21 @@
 import cv2
 import numpy as np
 
-def convolution(img, kernel):
+
+def convolution(
+        img: np.ndarray, 
+        kernel: np.ndarray, 
+        padding: int = cv2.BORDER_DEFAULT
+):
     """
-    卷积函数 (默认填充方式为cv2.BORDER_DEFAULT)
+    卷积函数
+
+    参数:
+    img: 灰度图像
+    kernel: 卷积核
+    padding: 填充方式, 默认为BORDER_DEFAULT (反射填充)
+
+    返回值: 卷积后图像
     """
     img_h, img_w = img.shape
     ker_h, ker_w = kernel.shape
@@ -14,20 +26,8 @@ def convolution(img, kernel):
     img_pad = cv2.copyMakeBorder(img, pad_h, pad_h, pad_w, pad_w, cv2.BORDER_DEFAULT)
 
     # 卷积运算
-    img_res = np.zeros_like(img, dtype=np.int64)
+    new_img = np.zeros_like(img, dtype=np.int64)  # 卷积后数值会可能溢出
     for i in range(img_h):
         for j in range(img_w):
-            img_res[i][j] = (img_pad[i:i + ker_h, j:j + ker_w] * kernel).sum()
-    return img_res
-
-
-if __name__ == '__main__':
-    img = np.array([[1, 2, 3, 4, 5],
-                    [4, 5, 6, 7, 8], 
-                    [1, 2, 3, 4, 5], 
-                    [2, 3, 4, 5, 6], 
-                    [4, 5, 6, 7, 8]])
-    kernel = np.array([[1, 2, 3],
-                       [2, 1, 4], 
-                       [3, 4, 100]])
-    print(convolution(img, kernel))
+            new_img[i][j] = (img_pad[i:i + ker_h, j:j + ker_w] * kernel).sum()
+    return new_img

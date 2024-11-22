@@ -2,12 +2,12 @@ import cv2
 import numpy as np
 from modules import *
 
-img1 = Image(img_path="images/3.jpg")
+img1 = Image(img_path="images/2.jpg")
 gs = GrayScale(type='average')
 img_can = gs(img1)
 img_can = cv2.Canny(img_can.data, 50, 150)  
 
-img2 = Image(img_path="images/3.jpg")
+img2 = Image(img_path="images/2.jpg")
 mod = Sequential(
         GrayScale(type='average'), 
         GaussFilter(kernel_size=(3, 3), sigma=0.1, type='opencv'), 
@@ -29,4 +29,3 @@ ax[1].set_title('My-Canny')
 
 plt.tight_layout()
 plt.show()
-
