@@ -20,6 +20,7 @@ class Image():
 
         self.img_path = img_path
         self.grad_tan = None  # 保存梯度方向
+        self.hist = None
     
     def show(self):
         """
@@ -59,7 +60,7 @@ class Image():
 
         # 绘制比较图
         if compare is not None:
-            fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+            fig, ax = plt.subplots(1, 2, figsize=(12, 5))
 
             # 绘制opencv结果
             ax[0].imshow(compare, cmap='gray')

@@ -3,7 +3,9 @@ import numpy as np
 import  matplotlib.pyplot as plt
 from typing import Literal, Union, Tuple, Optional
 from images import Image
-from utils import convolution
+from utils import convolution, threshold_otsu
+
+from skimage.filters import threshold_multiotsu
 
 
 class Module:
@@ -121,8 +123,8 @@ class GaussFilter(Module):
         # 计算和生成卷积核
         k = ksize // 2
         x, y = np.meshgrid(np.arange(1, ksize + 1), np.arange(1, ksize + 1))
-        x = np.pow(x - (k + 1), 2)
-        y = np.pow(y - (k + 1), 2)
+        x = (x - (k + 1))**2
+        y = (y - (k + 1))**2
         kernel = np.exp(-(x + y) / (2 * self.sigma**2)) / (2 * np.pi * self.sigma**2)
         self.kernel = kernel / kernel.sum()  # 归一化
 
@@ -151,6 +153,7 @@ class CalcGrad(Module):
         grad_x = convolution(img.data, self.s_x)  # 计算x方向梯度
         grad_y = convolution(img.data, self.s_y)  # 计算y方向梯度
         img.data = np.sqrt(grad_x ** 2 + grad_y ** 2)  # 计算梯度幅值
+        # img.data = img.data / img.data.max() * 255
         img.grad_tan = grad_y / (grad_x + 1e-6)  # 计算梯度方向
         return img
             
@@ -219,6 +222,28 @@ class NMSuppression(Module):
         grad_tan = img.grad_tan[x][y]
 
         com_points = []  # 保存需要比较的点的梯度幅值
+        # tan225 = np.tan(np.pi / 8)
+        # if -tan225 <= grad_tan < tan225:
+        #     if y != img_w - 1:
+        #         com_points.append(img.data[x][y + 1])
+        #     if y != 0:
+        #         com_points.append(img.data[x][y - 1])
+        # elif tan225 <= grad_tan < 1 / tan225:
+        #     if x != 0 and y != img_w - 1:
+        #         com_points.append(img.data[x - 1][y + 1])
+        #     if x != img_h - 1 and y != 0:
+        #         com_points.append(img.data[x + 1][y - 1])
+        # elif grad_tan >= 1 / tan225 or grad_tan < -1 / tan225:
+        #     if x != 0:
+        #         com_points.append(img.data[x - 1][y])
+        #     if x != img_h - 1:
+        #         com_points.append(img.data[x + 1][y])
+        # elif -1 / tan225 <= grad_tan < -tan225:
+        #     if x != 0 and y != 0:
+        #         com_points.append(img.data[x - 1][y - 1])
+        #     if x != img_h - 1 and y != img_w - 1:
+        #         com_points.append(img.data[x + 1][y + 1])
+
         if 0 <= grad_tan < 1:
             if x != 0 and y != img_w - 1:
                 com_points.append(grad_tan * img.data[x - 1][y + 1] + 
@@ -262,40 +287,68 @@ class DoubleThreshold(Module):
     def __init__(
             self, 
             th_low: Optional[int] = None, 
-            th_high: int = 150
+            th_high: int = 150,
+            otsu: bool = False
     ):
         """
         参数:
         th_low: 低阈值, 默认值为0.4 * 高阈值
         th_high: 高阈值, 默认值150
         """
-        # 设置默认低阈值
-        if th_low is None:
-            th_low = 0.4 * th_high
+        self.otsu = otsu
+        if self.otsu:
+            self.th_low = None
+            self.th_high = None
+        
+        else:
+            # 设置默认低阈值
+            if th_low is None:
+                th_low = 0.4 * th_high
 
-        assert th_low < th_high
-        self.th_low = th_low
-        self.th_high = th_high
+            assert th_low < th_high
+            self.th_low = th_low
+            self.th_high = th_high
 
     def __call__(
             self,
             img: Image
     ) -> Image:
+        
+        if self.otsu:
+            self.th_high = threshold_otsu(img)
+            self.th_low = 0.4 * self.th_high
+
         img_h, img_w = img.data.shape
-        # 选出强边缘
-        edge_x, edge_y = np.where(img.data >= self.th_high)
+        new_img = np.zeros_like(img.data, dtype=np.uint8)
+        edge_x, edge_y = np.where(img.data >= self.th_high)  # 选出强边缘点
         edges = list(zip(edge_x, edge_y))  # 保存要处理的像素点, 初始为所有强边缘点
         while len(edges) > 0:
             x, y = edges.pop()
-            img.data[x][y] = 255
+            new_img[x][y] = 255
             # 寻找周围是否有弱边缘点
             for dir_x, dir_y in [(0, 1), (0, -1), (1, 0), (-1, 0), (1, -1), (-1, 1), (1, 1), (-1, -1)]:
                 new_x = x + dir_x
                 new_y = y + dir_y
                 if not (0 <= new_x < img_h) or not (0 <= new_y < img_w):  # 越界保护
                     continue
-                if self.th_low <= img.data[new_x][new_y] < self.th_high:
-                    img.data[new_x][new_y] = 255
+                if self.th_low <= img.data[new_x][new_y] < self.th_high and new_img[new_x][new_y] != 255:  # 存在与边缘相连的弱边缘点
                     edges.append((new_x, new_y))
-        img.data = np.where(img.data == 255, img.data, 0).astype(np.uint8)  # 将非边缘点全部置零
+        img.data = new_img
         return img
+    
+
+
+if __name__ == '__main__':
+    model = Sequential(
+        GrayScale(type='average'),
+        GaussFilter(type='opencv'),
+        CalcGrad(operator='Sobel'),
+        NMSuppression(),
+        DoubleThreshold(otsu=True)
+    )
+    img = Image("images/1.jpg")
+    img = model(img)
+
+    plt.imshow(img.data, cmap='gray')
+    plt.grid('off')
+    plt.show()

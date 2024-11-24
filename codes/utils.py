@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+from images import Image
 
 def convolution(
         img: np.ndarray, 
@@ -31,3 +31,25 @@ def convolution(
         for j in range(img_w):
             new_img[i][j] = (img_pad[i:i + ker_h, j:j + ker_w] * kernel).sum()
     return new_img
+
+
+def threshold_otsu(
+        img: Image
+):
+    lower = np.floor(img.data.min())
+    upper = np.ceil(img.data.max())
+    hist, bin_edges = np.histogram(img.data, bins=np.arange(lower, upper + 1))
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    weight1 = np.cumsum(hist)
+    weight2 = np.cumsum(hist[::-1])[::-1]
+
+    mean1 = np.cumsum(hist * bin_centers) / weight1
+    mean2 = (np.cumsum((hist * bin_centers)[::-1]) / weight2[::-1])[::-1]
+
+    variance12 = weight1[:-1] * weight2[1:] * (mean1[:-1] - mean2[1:]) ** 2
+
+    idx = np.argmax(variance12)
+    threshold = bin_centers[idx]
+
+    return threshold
