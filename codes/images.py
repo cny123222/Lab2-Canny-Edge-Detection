@@ -60,17 +60,22 @@ class Image():
 
         # 绘制比较图
         if compare is not None:
-            fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+            ori_img = cv2.imread(self.img_path)
+            ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+
+            fig, ax = plt.subplots(1, 3, figsize=(18, 6))
+
+            # 绘制原图
+            ax[0].imshow(ori_img)
+            ax[0].axis('off')
 
             # 绘制opencv结果
-            ax[0].imshow(compare, cmap='gray')
-            ax[0].axis('off')
-            ax[0].set_title('OpenCV-Canny')
+            ax[1].imshow(compare, cmap='gray')
+            ax[1].axis('off')
 
             # 绘制个人实现结果
-            ax[1].imshow(self.data, cmap='gray')
-            ax[1].axis('off')
-            ax[1].set_title('My-Canny')
+            ax[2].imshow(self.data, cmap='gray')
+            ax[2].axis('off')
 
             plt.tight_layout()
             plt.savefig(save_pth, dpi=dpi)

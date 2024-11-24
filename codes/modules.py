@@ -332,6 +332,7 @@ class DoubleThreshold(Module):
                 if not (0 <= new_x < img_h) or not (0 <= new_y < img_w):  # 越界保护
                     continue
                 if self.th_low <= img.data[new_x][new_y] < self.th_high and new_img[new_x][new_y] != 255:  # 存在与边缘相连的弱边缘点
+                    new_img[x][y] = 255
                     edges.append((new_x, new_y))
         img.data = new_img
         return img
