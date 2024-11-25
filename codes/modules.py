@@ -222,28 +222,6 @@ class NMSuppression(Module):
         grad_tan = img.grad_tan[x][y]
 
         com_points = []  # 保存需要比较的点的梯度幅值
-        # tan225 = np.tan(np.pi / 8)
-        # if -tan225 <= grad_tan < tan225:
-        #     if y != img_w - 1:
-        #         com_points.append(img.data[x][y + 1])
-        #     if y != 0:
-        #         com_points.append(img.data[x][y - 1])
-        # elif tan225 <= grad_tan < 1 / tan225:
-        #     if x != 0 and y != img_w - 1:
-        #         com_points.append(img.data[x - 1][y + 1])
-        #     if x != img_h - 1 and y != 0:
-        #         com_points.append(img.data[x + 1][y - 1])
-        # elif grad_tan >= 1 / tan225 or grad_tan < -1 / tan225:
-        #     if x != 0:
-        #         com_points.append(img.data[x - 1][y])
-        #     if x != img_h - 1:
-        #         com_points.append(img.data[x + 1][y])
-        # elif -1 / tan225 <= grad_tan < -tan225:
-        #     if x != 0 and y != 0:
-        #         com_points.append(img.data[x - 1][y - 1])
-        #     if x != img_h - 1 and y != img_w - 1:
-        #         com_points.append(img.data[x + 1][y + 1])
-
         if 0 <= grad_tan < 1:
             if x != 0 and y != img_w - 1:
                 com_points.append(grad_tan * img.data[x - 1][y + 1] + 
@@ -338,18 +316,17 @@ class DoubleThreshold(Module):
         return img
     
 
+# if __name__ == '__main__':
+#     model = Sequential(
+#         GrayScale(type='average'),
+#         GaussFilter(type='opencv'),
+#         CalcGrad(operator='Sobel'),
+#         NMSuppression(),
+#         DoubleThreshold(otsu=True)
+#     )
+#     img = Image("images/1.jpg")
+#     img = model(img)
 
-if __name__ == '__main__':
-    model = Sequential(
-        GrayScale(type='average'),
-        GaussFilter(type='opencv'),
-        CalcGrad(operator='Sobel'),
-        NMSuppression(),
-        DoubleThreshold(otsu=True)
-    )
-    img = Image("images/1.jpg")
-    img = model(img)
-
-    plt.imshow(img.data, cmap='gray')
-    plt.grid('off')
-    plt.show()
+#     plt.imshow(img.data, cmap='gray')
+#     plt.grid('off')
+#     plt.show()

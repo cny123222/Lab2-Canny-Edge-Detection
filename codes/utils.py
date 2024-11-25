@@ -36,6 +36,11 @@ def convolution(
 def threshold_otsu(
         img: Image
 ):
+    """
+    Otsu自适应阈值选取
+
+    Reference: https://github.com/khushitejwani/Canny-Edge-Detection-Using-Otsu-Thresholding
+    """
     lower = np.floor(img.data.min())
     upper = np.ceil(img.data.max())
     hist, bin_edges = np.histogram(img.data, bins=np.arange(lower, upper + 1))

@@ -12,8 +12,8 @@ def parse_args(args):
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", type=str, default="images", help="path to the input image or folder of input images")
     parser.add_argument("--operator", choices=["Roberts", "Sobel", "Prewitt", "Canny"], default="Sobel", help="type of gradient operator")
-    parser.add_argument("--th-low", type=int, default=50, help="low threshold for edge detection")
-    parser.add_argument("--th-high", type=int, default=150, help="high threshold for edge detection")
+    parser.add_argument("--th-low", type=int, default=-1, help="low threshold for edge detection")
+    parser.add_argument("--th-high", type=int, default=100, help="high threshold for edge detection")
     parser.add_argument('--otsu', type=bool, default=False, help="whether to use otsu to choose thresholds adaptively")
     parser.add_argument('--sigma', type=float, default=0.2, help="sigma for Gaussian Blur")
     parser.add_argument("--output-dir", type=str, default="edges", help="path to folder of output images")
@@ -50,6 +50,10 @@ def create_model(args):
     """
     搭建边缘检测模型
     """
+    # 设置默认低阈值
+    if args.th_low == -1:
+        args.th_low = args.th_high * 0.4
+
     model = Sequential(
         GrayScale(), 
         GaussFilter(kernel_size=(3, 3), sigma=args.sigma, type='opencv'), 
